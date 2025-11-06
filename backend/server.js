@@ -12,6 +12,7 @@ import apiRoutes from './routes/api.js';
 import rssService from './services/rssService.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 8001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/multlang-news-hub';
 
