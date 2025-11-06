@@ -17,7 +17,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/multla
 
 // Middleware
 app.use(cors({
-  origin:process.env.CLINET_URI,
+  origin:process.env.CLIENT_URI,
   credentials: true
 }));
 
