@@ -15,11 +15,40 @@ const app = express();
 const PORT = process.env.PORT || 8001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/multlang-news-hub';
 
-// Middleware
-app.use(cors({
-  origin:process.env.CLIENT_URI,
-  credentials: true
-}));
+// ---------------- Robust CORS middleware ----------------
+// Allow localhost during dev and the production CLIENT_URI (if set).
+// Normalize origins (remove trailing slash) and echo the exact request origin
+// when allowed — prevents trailing-slash mismatch issues.
+const devOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+const prodOrigin = process.env.CLIENT_URI; // note: you're using CLIENT_URI in env
+const allowedOrigins = [...devOrigins, prodOrigin].filter(Boolean).map(o => String(o).replace(/\/+$/, ''));
+
+app.use((req, res, next) => {
+  const originHeader = req.headers.origin;
+  if (!originHeader) {
+    // Non-browser clients (curl, server-to-server) — allow
+    return next();
+  }
+
+  const normalizedOrigin = originHeader.replace(/\/+$/, '');
+  if (allowedOrigins.includes(normalizedOrigin)) {
+    // Echo the exact origin the browser sent so it matches exactly
+    res.setHeader('Access-Control-Allow-Origin', originHeader);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  }
+
+  // Handle preflight quickly
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+
+  next();
+});
+
+// Keep the cors package (optional) — origin:true will allow the already-set header to be used
+app.use(cors({ origin: true, credentials: true }));
+// -------------------------------------------------------
+
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
