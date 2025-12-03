@@ -1,30 +1,21 @@
-import puppeteer from "puppeteer";
-import * as cheerio from "cheerio";
+import { getBrowser } from '../utils/browserClient.js';
 
-/**
- * Normalize items
- */
-function normalizeItem({ title, link, description }) {
-  return { title, link, description, pubDate: new Date().toISOString() };
-}
+// ...
 
-/**
- * Scrapes Prajavani
- */
 export async function fetchPrajavaniNews() {
   const url = "https://www.prajavani.net/";
   let browser;
-  
+
   try {
-    browser = await puppeteer.launch({ 
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await getBrowser();
     const page = await browser.newPage();
-    
+
+    // Bypass CSP to avoid "eval" errors
+    await page.setBypassCSP(true);
+
     // Set user agent to avoid blocking
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    
+
     await page.goto(url, { waitUntil: "networkidle2", timeout: 90000 });
 
     const html = await page.content();
@@ -44,7 +35,7 @@ export async function fetchPrajavaniNews() {
 
     console.log(`✅ Scraped ${items.length} items from Prajavani`);
     return items;
-    
+
   } catch (error) {
     console.error('❌ Error scraping Prajavani:', error.message);
     return [];
@@ -64,17 +55,17 @@ export async function fetchPrajavaniNews() {
 export async function fetchDeccanheraldNews() {
   const url = "https://www.deccanherald.com/";
   let browser;
-  
+
   try {
-    browser = await puppeteer.launch({ 
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await getBrowser();
     const page = await browser.newPage();
-    
+
+    // Bypass CSP to avoid "eval" errors
+    await page.setBypassCSP(true);
+
     // Set user agent to avoid blocking
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    
+
     await page.goto(url, { waitUntil: "networkidle2", timeout: 90000 });
 
     const html = await page.content();
@@ -94,7 +85,7 @@ export async function fetchDeccanheraldNews() {
 
     console.log(`✅ Scraped ${items.length} items from deccan herald`);
     return items;
-    
+
   } catch (error) {
     console.error('❌ Error scraping deccan herald:', error.message);
     return [];
@@ -112,17 +103,17 @@ export async function fetchDeccanheraldNews() {
 export async function fetchKannadaPrabhaNews() {
   const url = "https://www.kannadaprabha.com/";
   let browser;
-  
+
   try {
-    browser = await puppeteer.launch({ 
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await getBrowser();
     const page = await browser.newPage();
-    
+
+    // Bypass CSP to avoid "eval" errors
+    await page.setBypassCSP(true);
+
     // Set user agent to avoid blocking
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    
+
     await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
 
     const html = await page.content();
@@ -136,7 +127,7 @@ export async function fetchKannadaPrabhaNews() {
       const title = mainLink.text().trim();
       const linkPart = mainLink.attr("href");
       const link = linkPart ? (linkPart.startsWith("http") ? linkPart : "https://www.kannadaprabha.com" + linkPart) : null;
-      
+
       // Get description from paragraph or summary
       const description = $(el).find("p, .summary, .excerpt").first().text().trim();
 
@@ -147,7 +138,7 @@ export async function fetchKannadaPrabhaNews() {
 
     console.log(`✅ Scraped ${items.length} items from Kannada Prabha`);
     return items;
-    
+
   } catch (error) {
     console.error('❌ Error scraping Kannada Prabha:', error.message);
     return [];
