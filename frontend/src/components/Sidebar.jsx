@@ -36,7 +36,7 @@ const Sidebar = ({
             <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
               <Sparkles className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-bold">NewsHub</h2>
+            <h2 className="text-xl font-bold">GyanPatra</h2>
           </div>
           <button
             onClick={onClose}

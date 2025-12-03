@@ -101,7 +101,7 @@ function NewsApp() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    NEWS HUB
+                    GYANPATRA
                   </h1>
                   <p className="text-sm text-gray-600">
                     {selectedSource ? sources.find(s => s.id === selectedSource)?.label : 'Select a language and newspaper'}
