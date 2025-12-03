@@ -49,7 +49,7 @@ const newsItemSchema = new mongoose.Schema({
 // Compound indexes for efficient querying
 newsItemSchema.index({ sourceId: 1, publishedAt: -1 });
 newsItemSchema.index({ language: 1, publishedAt: -1 });
-newsItemSchema.index({ createdAt: 1 }, { expireAfterSeconds: 604800 }); // TTL index
+
 
 export default mongoose.model('NewsItem', newsItemSchema);
 

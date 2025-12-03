@@ -82,8 +82,8 @@ app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
     success: false,
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
+    error: process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
       : err.message
   });
 });
@@ -99,10 +99,7 @@ app.use('*', (req, res) => {
 // Connect to MongoDB
 async function connectDB() {
   try {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
@@ -114,11 +111,11 @@ async function connectDB() {
 async function initializeFeeds() {
   try {
     console.log('🔄 Initializing RSS feeds...');
-    
+
     // Fetch all sources on startup
     const { RSS_SOURCES } = await import('./constants/sources.js');
     const allSources = Object.values(RSS_SOURCES).flat();
-    
+
     for (const source of allSources) {
       try {
         await rssService.refreshSource(source.id);
@@ -127,7 +124,7 @@ async function initializeFeeds() {
         console.error(`❌ Failed to initialize ${source.label}:`, error.message);
       }
     }
-    
+
     console.log('✅ RSS feeds initialization completed');
   } catch (error) {
     console.error('❌ Error initializing feeds:', error);
@@ -139,10 +136,10 @@ function startScheduler() {
   // Refresh every 15 minutes
   cron.schedule('*/15 * * * *', async () => {
     console.log('🔄 Running scheduled RSS refresh...');
-    
+
     const { RSS_SOURCES } = await import('./constants/sources.js');
     const allSources = Object.values(RSS_SOURCES).flat();
-    
+
     for (const source of allSources) {
       try {
         await rssService.refreshSource(source.id);
@@ -152,14 +149,14 @@ function startScheduler() {
       }
     }
   });
-  
+
   console.log('✅ Background scheduler started (every 15 minutes)');
 }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
-  
+
   rssService.stopBackgroundRefresh();
   await mongoose.connection.close();
   process.exit(0);
@@ -167,7 +164,7 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Shutting down gracefully...');
-  
+
   rssService.stopBackgroundRefresh();
   await mongoose.connection.close();
   process.exit(0);
@@ -179,7 +176,7 @@ async function startServer() {
     await connectDB();
     await initializeFeeds();
     startScheduler();
-    
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📰 MultiLang News Hub API ready`);
