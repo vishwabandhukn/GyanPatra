@@ -10,11 +10,18 @@ export async function fetchPrajavaniNews() {
     browser = await getBrowser();
     const page = await browser.newPage();
 
-    // Bypass CSP to avoid "eval" errors
-    await page.setBypassCSP(true);
+    // Optimize: Block images, stylesheets, fonts
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
 
     // Set user agent to avoid blocking
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
@@ -37,7 +44,10 @@ export async function fetchPrajavaniNews() {
     return items;
 
   } catch (error) {
-    console.error('❌ Error scraping Prajavani:', error.message);
+    console.error(`❌ Error scraping Prajavani [${error.name}]:`, error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+    }
     return [];
   } finally {
     if (browser) {
@@ -108,11 +118,18 @@ export async function fetchKannadaPrabhaNews() {
     browser = await getBrowser();
     const page = await browser.newPage();
 
-    // Bypass CSP to avoid "eval" errors
-    await page.setBypassCSP(true);
+    // Optimize: Block images, stylesheets, fonts
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
 
     // Set user agent to avoid blocking
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
@@ -140,7 +157,7 @@ export async function fetchKannadaPrabhaNews() {
     return items;
 
   } catch (error) {
-    console.error('❌ Error scraping Kannada Prabha:', error.message);
+    console.error(`❌ Error scraping Kannada Prabha [${error.name}]:`, error.message);
     return [];
   } finally {
     if (browser) {

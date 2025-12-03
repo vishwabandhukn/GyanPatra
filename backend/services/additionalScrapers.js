@@ -120,10 +120,17 @@ export async function fetchLiveHindustanNews() {
     browser = await getBrowser();
 
     const page = await browser.newPage();
-    // Bypass CSP to avoid "eval" errors
-    await page.setBypassCSP(true);
+    // Optimize: Block images, stylesheets, fonts
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
 
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const html = await page.content();
@@ -152,7 +159,7 @@ export async function fetchLiveHindustanNews() {
     return items;
 
   } catch (error) {
-    console.error('❌ Error scraping Live Hindustan:', error.message);
+    console.error(`❌ Error scraping Live Hindustan [${error.name}]:`, error.message);
     return [];
   } finally {
     if (browser) {
