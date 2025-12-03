@@ -1,38 +1,39 @@
-import { getBrowser } from '../utils/browserClient.js';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
-// ...
+// Helper to normalize items
+function normalizeItem(item) {
+  return {
+    title: item.title?.trim() || '',
+    link: item.link || '',
+    description: item.description?.trim() || '',
+    publishedAt: item.publishedAt || new Date().toISOString()
+  };
+}
+
+// Helper to fetch HTML with Axios
+async function fetchHTML(url) {
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,kn;q=0.8',
+      },
+      timeout: 30000 // 30 seconds timeout
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error fetching URL ${url}:`, error.message);
+    throw error;
+  }
+}
 
 export async function fetchPrajavaniNews() {
   const url = "https://www.prajavani.net/";
-  let browser;
 
   try {
-    browser = await getBrowser();
-    const page = await browser.newPage();
-
-    // Optimize: Block images, stylesheets, fonts
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
-
-    // Set user agent to avoid blocking
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-
-    // Wait for content to load
-    try {
-      await page.waitForSelector("div.story-card", { timeout: 15000 });
-    } catch (e) {
-      console.log("⚠️ Timeout waiting for Prajavani selector, continuing anyway...");
-    }
-
-    const html = await page.content();
+    const html = await fetchHTML(url);
     const $ = cheerio.load(html);
     const items = [];
 
@@ -47,45 +48,20 @@ export async function fetchPrajavaniNews() {
       if (title && link) items.push(normalizeItem({ title, link, description }));
     });
 
-    console.log(`✅ Scraped ${items.length} items from Prajavani`);
+    console.log(`✅ Scraped ${items.length} items from Prajavani (Static)`);
     return items;
 
   } catch (error) {
-    console.error(`❌ Error scraping Prajavani [${error.name}]:`, error.message);
-    if (error.response) {
-      console.error('Response status:', error.response.status);
-    }
+    console.error('❌ Error scraping Prajavani:', error.message);
     return [];
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }
 
-/*deccan herald
-
-
-  
- */
-
 export async function fetchDeccanheraldNews() {
   const url = "https://www.deccanherald.com/";
-  let browser;
 
   try {
-    browser = await getBrowser();
-    const page = await browser.newPage();
-
-    // Bypass CSP to avoid "eval" errors
-    await page.setBypassCSP(true);
-
-    // Set user agent to avoid blocking
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-
-    const html = await page.content();
+    const html = await fetchHTML(url);
     const $ = cheerio.load(html);
     const items = [];
 
@@ -100,54 +76,20 @@ export async function fetchDeccanheraldNews() {
       if (title && link) items.push(normalizeItem({ title, link, description }));
     });
 
-    console.log(`✅ Scraped ${items.length} items from deccan herald`);
+    console.log(`✅ Scraped ${items.length} items from Deccan Herald (Static)`);
     return items;
 
   } catch (error) {
-    console.error('❌ Error scraping deccan herald:', error.message);
+    console.error('❌ Error scraping Deccan Herald:', error.message);
     return [];
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }
 
-
-
-
-
 export async function fetchKannadaPrabhaNews() {
   const url = "https://www.kannadaprabha.com/";
-  let browser;
 
   try {
-    browser = await getBrowser();
-    const page = await browser.newPage();
-
-    // Optimize: Block images, stylesheets, fonts
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
-
-    // Set user agent to avoid blocking
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-
-    // Wait for content to load
-    try {
-      await page.waitForSelector("div[class*='story-card'], div[class*='storycard']", { timeout: 15000 });
-    } catch (e) {
-      console.log("⚠️ Timeout waiting for Kannada Prabha selector, continuing anyway...");
-    }
-
-    const html = await page.content();
+    const html = await fetchHTML(url);
     const $ = cheerio.load(html);
     const items = [];
 
@@ -167,15 +109,11 @@ export async function fetchKannadaPrabhaNews() {
       }
     });
 
-    console.log(`✅ Scraped ${items.length} items from Kannada Prabha`);
+    console.log(`✅ Scraped ${items.length} items from Kannada Prabha (Static)`);
     return items;
 
   } catch (error) {
-    console.error(`❌ Error scraping Kannada Prabha [${error.name}]:`, error.message);
+    console.error('❌ Error scraping Kannada Prabha:', error.message);
     return [];
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }
