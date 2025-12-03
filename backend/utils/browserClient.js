@@ -7,8 +7,18 @@ export const getBrowser = async () => {
 
     if (isProduction) {
         // Vercel / Production environment
+        // Optimized args for serverless environment
         return await puppeteerCore.launch({
-            args: chromium.args,
+            args: [
+                ...chromium.args,
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process', // Important for serverless
+                '--disable-setuid-sandbox',
+                '--no-sandbox'
+            ],
             defaultViewport: chromium.defaultViewport,
             executablePath: await chromium.executablePath(),
             headless: chromium.headless,
