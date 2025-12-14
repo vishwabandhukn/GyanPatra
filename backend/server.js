@@ -107,80 +107,33 @@ async function connectDB() {
   }
 }
 
-// Initialize RSS feeds on startup
-async function initializeFeeds() {
+// Background Job - Schedule RSS refresh every 15 minutes
+// This runs in the background and does NOT block the server
+cron.schedule('*/15 * * * *', async () => {
+  console.log('🔄 [Cron] Starting scheduled RSS refresh...');
   try {
-    console.log('🔄 Initializing RSS feeds...');
-
-    // Fetch all sources on startup
-    const { RSS_SOURCES } = await import('./constants/sources.js');
-    const allSources = Object.values(RSS_SOURCES).flat();
-
-    for (const source of allSources) {
-      try {
-        await rssService.refreshSource(source.id);
-        console.log(`✅ Initialized ${source.label}`);
-      } catch (error) {
-        console.error(`❌ Failed to initialize ${source.label}:`, error.message);
-      }
-    }
-
-    console.log('✅ RSS feeds initialization completed');
+    await rssService.refreshAllSources();
+    console.log('✅ [Cron] Scheduled RSS refresh completed');
   } catch (error) {
-    console.error('❌ Error initializing feeds:', error);
+    console.error('❌ [Cron] Scheduled RSS refresh failed:', error);
   }
-}
-
-// Start background refresh scheduler
-function startScheduler() {
-  // Refresh every 15 minutes
-  cron.schedule('*/15 * * * *', async () => {
-    console.log('🔄 Running scheduled RSS refresh...');
-
-    const { RSS_SOURCES } = await import('./constants/sources.js');
-    const allSources = Object.values(RSS_SOURCES).flat();
-
-    for (const source of allSources) {
-      try {
-        await rssService.refreshSource(source.id);
-        console.log(`✅ Refreshed ${source.label}`);
-      } catch (error) {
-        console.error(`❌ Failed to refresh ${source.label}:`, error.message);
-      }
-    }
-  });
-
-  console.log('✅ Background scheduler started (every 15 minutes)');
-}
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down gracefully...');
-
-  rssService.stopBackgroundRefresh();
-  await mongoose.connection.close();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 Shutting down gracefully...');
-
-  rssService.stopBackgroundRefresh();
-  await mongoose.connection.close();
-  process.exit(0);
 });
 
 // Start server
 async function startServer() {
   try {
+    // Database connection must happen before we accept requests
     await connectDB();
-    await initializeFeeds();
-    startScheduler();
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📰 MultiLang News Hub API ready`);
       console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+
+      // OPTIONAL: Trigger an initial fetch in the background (fire and forget)
+      // purely to populate data if DB is empty, without blocking startup
+      console.log('🔄 triggering initial background fetch (non-blocking)...');
+      rssService.refreshAllSources().catch(err => console.error('Initial background fetch error:', err));
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -189,5 +142,3 @@ async function startServer() {
 }
 
 startServer();
-
-

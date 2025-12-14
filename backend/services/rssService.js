@@ -1,7 +1,7 @@
 import Parser from 'rss-parser';
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import sanitizeHtml from 'sanitize-html';
+import pLimit from 'p-limit';
 import NewsItem from '../models/NewsItem.js';
 import { RSS_SOURCES } from '../constants/sources.js';
 
@@ -17,7 +17,8 @@ class RSSService {
         'User-Agent': 'MultiLang News Hub Bot 1.0'
       }
     });
-    this.refreshIntervals = new Map();
+    // Limit concurrency to 5 parallel requests to avoid overloading network/memory
+    this.limit = pLimit(5);
   }
 
   sanitizeContent(html) {
@@ -148,15 +149,24 @@ class RSSService {
   }
 
   async saveItems(items) {
+    if (!items || items.length === 0) return;
+
+    // Create bulk operations
     const bulkOps = items.map(item => ({
       updateOne: {
-        filter: { guid: item.guid },
-        update: { $set: item },
-        upsert: true
+        filter: { guid: item.guid }, // Check if news with this GUID exists
+        update: { $set: item },      // Update content (in case of corrections)
+        upsert: true                 // Insert if doesn't exist
       }
     }));
 
-    if (bulkOps.length > 0) await NewsItem.bulkWrite(bulkOps);
+    try {
+      if (bulkOps.length > 0) {
+        await NewsItem.bulkWrite(bulkOps);
+      }
+    } catch (error) {
+      console.error('Error in bulkWrite:', error.message);
+    }
   }
 
   async getCachedNews(sourceId, limit = 50) {
@@ -173,6 +183,27 @@ class RSSService {
     return await this.fetchFeed(source.feedUrl, sourceId, source.language, source.type || 'rss');
   }
 
+  // New Method: Fetch all sources in parallel
+  async refreshAllSources() {
+    const allSources = [];
+    for (const lang in RSS_SOURCES) {
+      allSources.push(...RSS_SOURCES[lang]);
+    }
+
+    console.log(`🔄 Starting refresh for ${allSources.length} sources...`);
+
+    // Map sources to promises with concurrency limit
+    const promises = allSources.map(source =>
+      this.limit(() =>
+        this.fetchFeed(source.feedUrl, source.id, source.language, source.type || 'rss')
+          .catch(err => console.error(`Failed to refresh ${source.id}:`, err.message))
+      )
+    );
+
+    await Promise.all(promises);
+    console.log('✅ All sources refreshed.');
+  }
+
   findSourceById(sourceId) {
     for (const lang in RSS_SOURCES) {
       const source = RSS_SOURCES[lang].find(s => s.id === sourceId);
@@ -180,36 +211,6 @@ class RSSService {
     }
     return null;
   }
-
-  startBackgroundRefresh(intervalMinutes = 15) {
-    console.log(`Starting background refresh every ${intervalMinutes} minutes`);
-    this.clearAllIntervals();
-
-    for (const lang in RSS_SOURCES) {
-      RSS_SOURCES[lang].forEach(source => {
-        const interval = setInterval(async () => {
-          try {
-            await this.refreshSource(source.id);
-          } catch (error) {
-            console.error(`Background refresh failed for ${source.id}:`, error.message);
-          }
-        }, intervalMinutes * 60 * 1000);
-
-        this.refreshIntervals.set(source.id, interval);
-      });
-    }
-  }
-
-  clearAllIntervals() {
-    this.refreshIntervals.forEach(interval => clearInterval(interval));
-    this.refreshIntervals.clear();
-  }
-
-  stopBackgroundRefresh() {
-    this.clearAllIntervals();
-    console.log('Background refresh stopped');
-  }
 }
 
 export default new RSSService();
-
