@@ -32,6 +32,13 @@ app.use((req, res, next) => {
   }
 
   const normalizedOrigin = originHeader.replace(/\/+$/, '');
+
+  // Debug log for CORS issues
+  if (!allowedOrigins.includes(normalizedOrigin)) {
+    console.warn(`[CORS] Request blocked from origin: '${originHeader}'`);
+    console.warn(`[CORS] Allowed origins:`, allowedOrigins);
+  }
+
   if (allowedOrigins.includes(normalizedOrigin)) {
     // Echo the exact origin the browser sent so it matches exactly
     res.setHeader('Access-Control-Allow-Origin', originHeader);
