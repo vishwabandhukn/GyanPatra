@@ -1,4 +1,5 @@
 import Parser from 'rss-parser';
+import axios from 'axios';
 import * as cheerio from 'cheerio';
 import sanitizeHtml from 'sanitize-html';
 import pLimit from 'p-limit';
@@ -66,7 +67,18 @@ class RSSService {
 
       // Normal RSS feed
       console.log(`Fetching RSS feed: ${feedUrl}`);
-      const feed = await this.parser.parseURL(feedUrl);
+
+      // Use Axios for the request to ensure headers are sent correctly (bypassing 403s)
+      const response = await axios.get(feedUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9'
+        },
+        timeout: 10000
+      });
+
+      const feed = await this.parser.parseString(response.data);
       const normalizedItems = feed.items.map(item => this.normalizeItem(item, sourceId, language));
 
       await this.saveItems(normalizedItems);
@@ -74,7 +86,9 @@ class RSSService {
       return normalizedItems;
 
     } catch (error) {
-      console.error(`❌ Error fetching feed ${feedUrl}:`, error.message);
+      // Log detailed error for debugging
+      const status = error.response ? error.response.status : 'Unknown';
+      console.error(`❌ Error fetching feed ${feedUrl}: Status ${status} - ${error.message}`);
       return [];
     }
   }
