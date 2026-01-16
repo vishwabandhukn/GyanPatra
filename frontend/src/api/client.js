@@ -4,7 +4,8 @@ import axios from 'axios';
 const client = axios.create({
     // Use VITE_API_BASE_URL environment variable if available
     // Fallback to /api for local development (which uses Vite proxy)
-    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+    // Remove trailing slashes to avoid double-slash issues
+    baseURL: (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, ''),
     headers: {
         'Content-Type': 'application/json',
     },

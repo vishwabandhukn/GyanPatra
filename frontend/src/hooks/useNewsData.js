@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import client from '../api/client';
 
 export const useNewsData = (sourceId) => {
   const [news, setNews] = useState([]);
@@ -10,20 +11,18 @@ export const useNewsData = (sourceId) => {
       setNews([]);
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
-    try {
-      // Use the correct backend API endpoint with query parameter
-        const BASE_URL = import.meta.env.VITE_API_URL;
-const response = await fetch(`${BASE_URL}/news?sourceId=${sourceId}`);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch news');
-      }
-      const result = await response.json();
-      
+    try {
+      // Use configured Axios client
+      const response = await client.get(`/news`, {
+        params: { sourceId }
+      });
+
+      const result = response.data;
+
       // Check if the response has the expected structure
       if (result.success && result.data) {
         setNews(result.data);
@@ -32,7 +31,9 @@ const response = await fetch(`${BASE_URL}/news?sourceId=${sourceId}`);
       }
     } catch (err) {
       console.error('Error fetching news:', err);
-      setError(err.message);
+      // Axios error handling
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch news';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
