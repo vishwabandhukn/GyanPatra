@@ -120,6 +120,9 @@ export async function fetchLiveHindustanNews() {
     browser = await getBrowser();
 
     const page = await browser.newPage();
+    // Bypass CSP for stability
+    await page.setBypassCSP(true);
+
     // Optimize: Block images, stylesheets, fonts
     await page.setRequestInterception(true);
     page.on('request', (req) => {

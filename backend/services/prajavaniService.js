@@ -63,6 +63,8 @@ async function fetchPrajavaniNewsPuppeteer() {
   try {
     browser = await getBrowser();
     const page = await browser.newPage();
+    // Bypass CSP for stability
+    await page.setBypassCSP(true);
     await page.setRequestInterception(true);
     page.on('request', (req) => {
       if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) req.abort();
@@ -206,6 +208,8 @@ async function fetchKannadaPrabhaNewsPuppeteer() {
   try {
     browser = await getBrowser();
     const page = await browser.newPage();
+    // Bypass CSP for stability
+    await page.setBypassCSP(true);
     await page.setRequestInterception(true);
     page.on('request', (req) => {
       if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) req.abort();
