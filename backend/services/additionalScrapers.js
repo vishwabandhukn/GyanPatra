@@ -73,8 +73,18 @@ export async function fetchNews18HindiNews() {
     // Bypass CSP to avoid "eval" errors
     await page.setBypassCSP(true);
 
+    // Optimize: Block images, stylesheets, fonts
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      if (['image', 'stylesheet', 'font', 'media', 'script'].includes(req.resourceType())) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
+
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
 
     const html = await page.content();
     const $ = cheerio.load(html);
@@ -123,10 +133,11 @@ export async function fetchLiveHindustanNews() {
     // Bypass CSP for stability
     await page.setBypassCSP(true);
 
-    // Optimize: Block images, stylesheets, fonts
+    // Optimize: Block images, stylesheets, fonts, and scripts if possible to speed up
     await page.setRequestInterception(true);
     page.on('request', (req) => {
-      if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+      const resourceType = req.resourceType();
+      if (['image', 'stylesheet', 'font', 'media', 'other'].includes(resourceType)) {
         req.abort();
       } else {
         req.continue();
@@ -134,7 +145,8 @@ export async function fetchLiveHindustanNews() {
     });
 
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    // Reduce timeout to fail faster if stuck, but increased robustness
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
 
     const html = await page.content();
     const $ = cheerio.load(html);
