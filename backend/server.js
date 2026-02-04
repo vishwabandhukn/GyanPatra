@@ -56,8 +56,6 @@ app.use((req, res, next) => {
 // Keep the cors package (optional) — origin:true will allow the already-set header to be used
 app.use(cors({ origin: true, credentials: true }));
 // -------------------------------------------------------
-
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -89,9 +87,7 @@ app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
     success: false,
-    error: process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err.message
+    error: process.env.NODE_ENV === 'production'? 'Internal server error' : err.message
   });
 });
 
