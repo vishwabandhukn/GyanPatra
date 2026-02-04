@@ -39,7 +39,7 @@ app.use((req, res, next) => {
     console.warn(`[CORS] Allowed origins:`, allowedOrigins);
   }
 
-  if (allowedOrigins.includes(normalizedOrigin)) {
+  if (allowedOrigins.includes(normalizedOrigin) || normalizedOrigin.endsWith('.vercel.app')) {
     // Echo the exact origin the browser sent so it matches exactly
     res.setHeader('Access-Control-Allow-Origin', originHeader);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -87,7 +87,7 @@ app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
     success: false,
-    error: process.env.NODE_ENV === 'production'? 'Internal server error' : err.message
+    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
   });
 });
 
