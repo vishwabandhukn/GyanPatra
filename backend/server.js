@@ -116,6 +116,10 @@ cron.schedule('*/15 * * * *', async () => {
   console.log('🔄 [Cron] Starting scheduled RSS refresh...');
   try {
     await rssService.refreshAllSources();
+
+    // Clean up old news (older than 24 hours)
+    await rssService.deleteOldNews(24);
+
     console.log('✅ [Cron] Scheduled RSS refresh completed');
   } catch (error) {
     console.error('❌ [Cron] Scheduled RSS refresh failed:', error);
@@ -136,7 +140,15 @@ async function startServer() {
       // OPTIONAL: Trigger an initial fetch in the background (fire and forget)
       // purely to populate data if DB is empty, without blocking startup
       console.log('🔄 triggering initial background fetch (non-blocking)...');
-      rssService.refreshAllSources().catch(err => console.error('Initial background fetch error:', err));
+      (async () => {
+        try {
+          // Verify/clean old news first to ensure user doesn't see stale data on start
+          await rssService.deleteOldNews(24);
+          await rssService.refreshAllSources();
+        } catch (err) {
+          console.error('Initial background fetch error:', err);
+        }
+      })();
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

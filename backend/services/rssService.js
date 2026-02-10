@@ -226,6 +226,24 @@ class RSSService {
     }
     return null;
   }
+
+
+  async deleteOldNews(retentionHours = 24) {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setHours(cutoffDate.getHours() - retentionHours);
+
+      const result = await NewsItem.deleteMany({
+        publishedAt: { $lt: cutoffDate }
+      });
+
+      console.log(`🗑️ Deleted ${result.deletedCount} news items older than ${retentionHours} hours`);
+      return result.deletedCount;
+    } catch (error) {
+      console.error('❌ Error deleting old news:', error.message);
+      return 0;
+    }
+  }
 }
 
 export default new RSSService();

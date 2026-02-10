@@ -149,6 +149,37 @@ router.post('/refresh', refreshLimiter, async (req, res) => {
   }
 });
 
+// GET /api/cron - Endpoint for Vercel Cron Jobs
+// This must be a GET request for Vercel Cron
+router.get('/cron', async (req, res) => {
+  try {
+    console.log('🔄 [Cron] Starting scheduled RSS refresh via Vercel Cron...');
+
+    // We MUST await this in a serverless environment, otherwise the function execution 
+    // might be frozen/killed before the background task completes.
+    await rssService.refreshAllSources();
+
+    // Clean up old news (older than 24 hours) as requested
+    await rssService.deleteOldNews(24);
+
+    // Invalidate cache after refresh
+    newsCache.flushAll();
+
+    console.log('✅ [Cron] Scheduled RSS refresh completed');
+
+    res.json({
+      success: true,
+      message: 'Cron job executed successfully'
+    });
+  } catch (error) {
+    console.error('❌ [Cron] Scheduled RSS refresh failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Cron job failed'
+    });
+  }
+});
+
 // GET /api/health - Health check endpoint
 router.get('/health', (req, res) => {
   res.json({
